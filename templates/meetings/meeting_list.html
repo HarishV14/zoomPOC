@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}Meetings{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2 mb-0">Meetings</h1>
+    {% if user.is_admin %}
+    <a href="{% url 'meetings:meeting_create' %}" class="btn btn-primary">
+        Create Meeting
+    </a>
+    {% endif %}
+</div>
+
+<!-- Upcoming Meetings -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h2 class="h5 mb-0">Upcoming Meetings</h2>
+    </div>
+    <div class="card-body p-0">
+        {% if upcoming_meetings %}
+        <div class="list-group list-group-flush">
+            {% for meeting in upcoming_meetings %}
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="h6 mb-1">
+                            <a href="{% url 'meetings:meeting_detail' meeting.pk %}">
+                                {{ meeting.title }}
+                            </a>
+                        </h3>
+                    </div>
+                    {% if meeting.is_active %}
+                    <button class="btn btn-sm btn-primary join-meeting" data-meeting-id="{{ meeting.pk }}">
+                        Join
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <p class="text-muted mb-0">No upcoming meetings scheduled.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Join Meeting Modal -->
+<div class="modal fade" id="joinMeetingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Join Meeting</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="joinMeetingForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Meeting Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Join</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const joinMeetingModal = new bootstrap.Modal(document.getElementById('joinMeetingModal'));
+    const joinMeetingForm = document.getElementById('joinMeetingForm');
+    let currentMeetingId = null;
+
+    document.querySelectorAll('.join-meeting').forEach(button => {
+        button.addEventListener('click', function() {
+            currentMeetingId = this.dataset.meetingId;
+            joinMeetingForm.action = `/meetings/${currentMeetingId}/join/`;
+            joinMeetingModal.show();
+        });
+    });
+
+    joinMeetingForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.href = data.join_url;
+            } else {
+                alert('Invalid meeting password');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while joining the meeting');
+        });
+    });
+});
+</script>
+{% endblock %} 

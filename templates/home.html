@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome to Zoom Meeting App{% endblock %}
+
+{% block content %}
+<div class="row align-items-center min-vh-75">
+    <div class="col-lg-6">
+        <h1 class="display-4 fw-bold mb-4">Welcome to Zoom Meeting App</h1>
+        <p class="lead mb-4">
+            A simple platform for managing and joining Zoom meetings.
+        </p>
+        {% if user.is_authenticated %}
+            {% if user.is_admin %}
+            <a href="{% url 'meetings:meeting_create' %}" class="btn btn-primary btn-lg me-3">
+                Create Meeting
+            </a>
+            {% endif %}
+            <a href="{% url 'meetings:meeting_list' %}" class="btn btn-outline-primary btn-lg">
+                View Meetings
+            </a>
+        {% else %}
+            <a href="{% url 'login' %}" class="btn btn-primary btn-lg me-3">
+                Login
+            </a>
+            <a href="{% url 'signup' %}" class="btn btn-outline-primary btn-lg">
+                Sign Up
+            </a>
+        {% endif %}
+    </div>
+    <div class="col-lg-6 d-none d-lg-block">
+        <img src="https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
+             alt="Video Conference" 
+             class="img-fluid rounded shadow-lg">
+    </div>
+</div>
+
+{% if user.is_authenticated %}
+<div class="row mt-5">
+    <div class="col-12">
+        <h2 class="h3 mb-4">Quick Actions</h2>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h3 class="h5 card-title">
+                    <i class="fas fa-calendar-check text-primary me-2"></i>
+                    Upcoming Meetings
+                </h3>
+                <p class="card-text">
+                    View and manage your upcoming meetings. Join meetings with a single click.
+                </p>
+                <a href="{% url 'meetings:meeting_list' %}" class="btn btn-outline-primary">
+                    View Meetings
+                </a>
+            </div>
+        </div>
+    </div>
+    {% if user.is_admin %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h3 class="h5 card-title">
+                    <i class="fas fa-plus-circle text-primary me-2"></i>
+                    Create Meeting
+                </h3>
+                <p class="card-text">
+                    Schedule a new meeting and invite participants. Set up recurring meetings easily.
+                </p>
+                <a href="{% url 'meetings:meeting_create' %}" class="btn btn-outline-primary">
+                    Create Meeting
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h3 class="h5 card-title">
+                    <i class="fas fa-history text-primary me-2"></i>
+                    Past Meetings
+                </h3>
+                <p class="card-text">
+                    Access recordings and details of your past meetings. Review meeting history.
+                </p>
+                <a href="{% url 'meetings:meeting_list' %}" class="btn btn-outline-primary">
+                    View History
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mt-5">
+    <div class="col-12">
+        <h2 class="h3 mb-4">Features</h2>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-video fa-3x text-primary mb-3"></i>
+                <h3 class="h5">HD Video Meetings</h3>
+                <p class="card-text">High-quality video conferencing with crystal clear audio.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
+                <h3 class="h5">Secure Meetings</h3>
+                <p class="card-text">End-to-end encryption and password protection for all meetings.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-alt fa-3x text-primary mb-3"></i>
+                <h3 class="h5">Easy Scheduling</h3>
+                <p class="card-text">Simple meeting scheduling with calendar integration.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                <h3 class="h5">User Management</h3>
+                <p class="card-text">Manage participants and control meeting access.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

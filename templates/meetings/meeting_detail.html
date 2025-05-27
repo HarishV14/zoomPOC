@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{{ meeting.title }} - Zoom Meeting App{% endblock %}
+
+{% block extra_css %}
+<!-- Zoom SDK CSS -->
+<link rel="stylesheet" href="https://source.zoom.us/3.13.2/css/bootstrap.css" type="text/css" />
+<link rel="stylesheet" href="https://source.zoom.us/3.13.2/css/react-select.css" type="text/css" />
+<style>
+    #zmmtg-root {
+        width: 100%;
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 9999;
+        background: #fff;
+    }
+    .meeting-container {
+        width: 100%;
+        height: 600px;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        position: relative;
+    }
+    .meeting-info {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .participant-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    /* Hide other content when meeting is active */
+    .meeting-active #main-content {
+        display: none;
+    }
+    .meeting-active #zmmtg-root {
+        display: block !important;
+    }
+    /* Ensure modal stays above Zoom interface */
+    .modal {
+        z-index: 10000 !important;
+    }
+    .modal-backdrop {
+        z-index: 9999 !important;
+    }
+    /* Add a close button for the meeting */
+    .close-meeting-btn {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        display: none;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid #dee2e6;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        text-align: center;
+        line-height: 40px;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .meeting-active .close-meeting-btn {
+        display: block;
+    }
+    /* Modal specific styles */
+    .modal.show {
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    .modal.fade {
+        transition: opacity 0.15s linear;
+    }
+    .modal.fade.show {
+        opacity: 1;
+    }
+    .modal-dialog {
+        margin: 1.75rem auto;
+        max-width: 500px;
+        position: relative;
+        z-index: 1051 !important;
+    }
+    /* Debug styles */
+    .modal-debug {
+        border: 2px solid red;
+    }
+    .modal-debug.show {
+        border-color: green;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>{{ meeting.title }}</h1>
+            <a href="{% url 'meetings:meeting_room' meeting.id %}" class="btn btn-primary">
+                {% if is_host %}Start Meeting{% else %}Join Meeting{% endif %}
+            </a>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Meeting Information</h2>
+                <dl class="row mb-0">
+                    <dt class="col-sm-3">Start Time</dt>
+                    <dd class="col-sm-9">{{ meeting.start_time|date:"F j, Y, g:i a" }}</dd>
+
+                    <dt class="col-sm-3">Status</dt>
+                    <dd class="col-sm-9">
+                        <span class="badge bg-success">Active</span>
+                    </dd>
+
+                    {% if meeting.description %}
+                    <dt class="col-sm-3">Description</dt>
+                    <dd class="col-sm-9">{{ meeting.description|linebreaks }}</dd>
+                    {% endif %}
+
+                    {% if is_host %}
+                    <dt class="col-sm-3">Meeting Password</dt>
+                    <dd class="col-sm-9">
+                        <div class="input-group">
+                            <input type="text" class="form-control" value="{{ meeting.password }}" readonly id="meetingPassword">
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyPassword()">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                    </dd>
+                    <dt class="col-sm-3">Meeting URL</dt>
+                    <dd class="col-sm-9">{{ meeting.join_url }}</dd>
+                    <dt class="col-sm-3">Meeting ID</dt>
+                    <dd class="col-sm-9">{{ meeting.zoom_meeting_id }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Participants</h2>
+                {% if meeting.participants.exists %}
+                <ul class="list-group list-group-flush">
+                    {% for participant in meeting.participants.all %}
+                    <li class="list-group-item px-0">
+                        {{ participant.get_full_name|default:participant.email }}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted mb-0">No participants yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyPassword() {
+    const passwordInput = document.getElementById('meetingPassword');
+    passwordInput.select();
+    document.execCommand('copy');
+    const copyButton = passwordInput.nextElementSibling;
+    const originalText = copyButton.innerHTML;
+    copyButton.innerHTML = '<i class="fas fa-check"></i> Copied!';
+    setTimeout(() => {
+        copyButton.innerHTML = originalText;
+    }, 2000);
+}
+</script>
+{% endblock %} 
