@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Zoom Integration Status</h4>
+                </div>
+                <div class="card-body">
+                    {% if user.zoom_token %}
+                        <div class="alert alert-success">
+                            <h5 class="alert-heading">
+                                <i class="fas fa-check-circle me-2"></i>Connected to Zoom!
+                            </h5>
+                            <p>Your Zoom account is successfully connected. You can now:</p>
+                            <ul class="mb-0">
+                                <li>Create meetings automatically through Zoom</li>
+                                <li>Track meeting participants</li>
+                                <li>Monitor meeting status</li>
+                            </ul>
+                            <hr>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{% url 'zoom_oauth:disconnect' %}" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-unlink me-1"></i>Disconnect Zoom
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <h5>Quick Actions</h5>
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'zoom_oauth:create_meeting' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2"></i>Create New Meeting
+                                </a>
+                                <a href="{% url 'zoom_oauth:meeting_list' %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-calendar-alt me-2"></i>View All Meetings
+                                </a>
+                            </div>
+                        </div>
+
+                        {% if user.zoom_meetings.exists %}
+                            <div class="mt-4">
+                                <h5>Recent Meetings</h5>
+                                <div class="list-group">
+                                    {% for meeting in user.zoom_meetings.all|slice:":5" %}
+                                        <a href="{% url 'zoom_oauth:meeting_detail' meeting.id %}" 
+                                           class="list-group-item list-group-item-action">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <h6 class="mb-1">{{ meeting.topic|default:"Untitled Meeting" }}</h6>
+                                                <small>
+                                                    <span class="badge {% if meeting.status == 'scheduled' %}bg-primary{% elif meeting.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                                        {{ meeting.status|title }}
+                                                    </span>
+                                                </small>
+                                            </div>
+                                            <p class="mb-1">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-clock me-1"></i>{{ meeting.start_time|date:"M d, Y H:i" }}
+                                                    {% if meeting.meeting_type == 'auto' %}
+                                                        <span class="badge bg-success ms-2">Auto Created</span>
+                                                    {% else %}
+                                                        <span class="badge bg-info ms-2">Manual Entry</span>
+                                                    {% endif %}
+                                                </small>
+                                            </p>
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <h5 class="alert-heading">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Not Connected to Zoom
+                            </h5>
+                            <p>To use all features of the Zoom Meeting App, you need to connect your Zoom account:</p>
+                            <ul class="mb-3">
+                                <li>Create meetings automatically through Zoom</li>
+                                <li>Track meeting participants</li>
+                                <li>Monitor meeting status</li>
+                            </ul>
+                            <p class="mb-0">
+                                <a href="{% url 'zoom_oauth:initiate' %}" class="btn btn-primary">
+                                    <i class="fab fa-zoom me-2"></i>Connect Zoom Account
+                                </a>
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

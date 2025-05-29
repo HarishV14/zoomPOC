@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'zoom_oauth:meeting_list' %}">Meetings</a></li>
+                    <li class="breadcrumb-item active">Create Meeting</li>
+                </ol>
+            </nav>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Create New Meeting</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post" id="meetingForm">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Meeting Type</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="meeting_type" id="type_auto" value="auto" checked>
+                                <label class="btn btn-outline-primary" for="type_auto">
+                                    <i class="fas fa-magic"></i> Create Automatically
+                                </label>
+                                
+                                <input type="radio" class="btn-check" name="meeting_type" id="type_manual" value="manual">
+                                <label class="btn btn-outline-primary" for="type_manual">
+                                    <i class="fas fa-edit"></i> Enter Manually
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Common fields -->
+                        <div class="mb-3">
+                            <label for="topic" class="form-label">Meeting Topic</label>
+                            <input type="text" class="form-control" id="topic" name="topic" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="start_time" class="form-label">Start Time</label>
+                            <input type="datetime-local" class="form-control" id="start_time" name="start_time" required>
+                        </div>
+
+                        <!-- Auto-creation specific fields -->
+                        <div id="autoFields">
+                            <div class="mb-3">
+                                <label for="duration" class="form-label">Duration (minutes)</label>
+                                <input type="number" class="form-control" id="duration" name="duration" value="60" min="1" max="1440">
+                            </div>
+                        </div>
+
+                        <!-- Manual entry specific fields -->
+                        <div id="manualFields" style="display: none;">
+                            <div class="mb-3">
+                                <label for="meeting_id" class="form-label">Meeting ID</label>
+                                <input type="text" class="form-control" id="meeting_id" name="meeting_id">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="text" class="form-control" id="password" name="password">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="host" class="form-label">Host Email</label>
+                                <input type="email" class="form-control" id="host" name="host">
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Create Meeting
+                            </button>
+                            <a href="{% url 'zoom_oauth:meeting_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const meetingTypeInputs = document.querySelectorAll('input[name="meeting_type"]');
+    const autoFields = document.getElementById('autoFields');
+    const manualFields = document.getElementById('manualFields');
+    const form = document.getElementById('meetingForm');
+
+    function toggleFields() {
+        const selectedType = document.querySelector('input[name="meeting_type"]:checked').value;
+        if (selectedType === 'auto') {
+            autoFields.style.display = 'block';
+            manualFields.style.display = 'none';
+            document.getElementById('meeting_id').required = false;
+            document.getElementById('password').required = false;
+            document.getElementById('host').required = false;
+            document.getElementById('duration').required = true;
+        } else {
+            autoFields.style.display = 'none';
+            manualFields.style.display = 'block';
+            document.getElementById('meeting_id').required = true;
+            document.getElementById('password').required = true;
+            document.getElementById('host').required = true;
+            document.getElementById('duration').required = false;
+        }
+    }
+
+    meetingTypeInputs.forEach(input => {
+        input.addEventListener('change', toggleFields);
+    });
+
+    // Initial toggle
+    toggleFields();
+
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        const selectedType = document.querySelector('input[name="meeting_type"]:checked').value;
+        if (selectedType === 'manual') {
+            const meetingId = document.getElementById('meeting_id').value;
+            const password = document.getElementById('password').value;
+            const host = document.getElementById('host').value;
+            
+            if (!meetingId || !password || !host) {
+                e.preventDefault();
+                alert('Please fill in all required fields for manual meeting creation.');
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %} 

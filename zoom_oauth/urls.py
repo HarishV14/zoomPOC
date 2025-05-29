@@ -1,0 +1,16 @@
+from django.urls import path
+from . import views
+
+app_name = 'zoom_oauth'
+
+urlpatterns = [
+    path('initiate/', views.initiate_zoom_oauth, name='initiate'),
+    path('callback/', views.zoom_oauth_callback, name='callback'),
+    path('disconnect/', views.disconnect_zoom, name='disconnect'),
+    path('status/', views.zoom_status, name='status'),
+    path('meetings/', views.meeting_list, name='meeting_list'),
+    path('meetings/create/', views.create_meeting, name='create_meeting'),
+    path('meetings/<int:meeting_id>/', views.meeting_detail, name='meeting_detail'),
+    path('meetings/<int:meeting_id>/start/', views.start_meeting, name='start_meeting'),
+    path('meetings/<str:meeting_id>/join/', views.join_meeting, name='join_meeting'),
+] 

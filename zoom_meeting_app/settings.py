@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     # Local apps
     'apps.accounts',
     'apps.meetings',
+    'zoom_oauth',
 ]
 
 MIDDLEWARE = [
@@ -124,7 +125,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
@@ -162,12 +163,12 @@ SITE_ID = 1
 # Email settings (for development)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-# Zoom API Settings
-ZOOM_API_KEY = env('ZOOM_API_KEY', default='03gQCpLOT4CpMix0gfGARA')
-ZOOM_API_SECRET = env('ZOOM_API_SECRET', default='Mza15maaCacfFYorr7tYns3sFgG5qg2U')
-ZOOM_SDK_KEY = env('ZOOM_SDK_KEY', default='zayxxDeYSSeQApKgvEtICw')
-ZOOM_SDK_SECRET = env('ZOOM_SDK_SECRET', default='PSdRzu9M4ZgbhblZ84xs6LrG3zK8m18D')
-ZOOM_ACCOUNT_ID = env('ZOOM_ACCOUNT_ID', default='o4_2rW7DSLi2Qn5dxJRoDg')
+# Zoom OAuth Settings
+ZOOM_CLIENT_ID = env('ZOOM_CLIENT_ID', default='zayxxDeYSSeQApKgvEtICw')
+ZOOM_CLIENT_SECRET = env('ZOOM_CLIENT_SECRET', default='PSdRzu9M4ZgbhblZ84xs6LrG3zK8m18D')
+ZOOM_REDIRECT_URI = env('ZOOM_REDIRECT_URI', default='https://adb1-2406-7400-ff03-e7cb-a99d-8cba-3868-1298.ngrok-free.app/zoom/oauth/callback/')
+ZOOM_OAUTH_SCOPES = "meeting:read:meeting,meeting:write:meeting,user:read:user,user:read:zak"
+
 # Channels
 CHANNEL_LAYERS = {
     'default': {
@@ -196,3 +197,7 @@ INTERNAL_IPS = ['127.0.0.1']
 # Custom user model
 AUTH_USER_MODEL = 'accounts.User'
 ACCOUNT_USER_DISPLAY = "apps.accounts.utils.custom_user_display"
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.ngrok-free.app"
+]

@@ -1,34 +1,10 @@
 import jwt
 import time
 import requests
-from datetime import datetime, timedelta
 from django.conf import settings
-from django.utils import timezone
 
 class ZoomAPI:
     BASE_URL = 'https://api.zoom.us/v2'
-    
-    @staticmethod
-    def generate_api_jwt_token():
-        url = "https://zoom.us/oauth/token"
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded"
-        }
-        data = {
-            "grant_type": "account_credentials",
-            "account_id": settings.ZOOM_ACCOUNT_ID
-        }
-        response = requests.post(
-            url,
-            headers=headers,
-            data=data,
-            auth=(settings.ZOOM_API_KEY, settings.ZOOM_API_SECRET)
-        )
-
-        if response.status_code == 200:
-            return response.json()["access_token"]
-        else:
-            raise Exception(f"Failed to get access token: {response.text}")
 
     @staticmethod
     def generate_sdk_jwt_token(meeting_number: str, role: int = 0) -> str:
@@ -50,7 +26,7 @@ class ZoomAPI:
 
     @classmethod
     def create_meeting(cls, user, topic, start_time, description=''):
-        token = cls.generate_api_jwt_token()  
+        token = user.zoom_token.refresh_token
         print(token,"token")
         headers = {
             'Authorization': f'Bearer {token}',
@@ -109,58 +85,3 @@ class ZoomAPI:
             return response.json()
         else:
             raise Exception(f"Failed to get Zoom meeting: {response.text}")
-
-    @classmethod
-    def update_meeting(cls, meeting_id, data):
-        token = cls.generate_api_jwt_token() 
-        headers = {
-            'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/json'
-        }
-        
-        response = requests.patch(
-            f'{cls.BASE_URL}/meetings/{meeting_id}',
-            headers=headers,
-            json=data
-        )
-        
-        if response.status_code != 204:
-            raise Exception(f"Failed to update Zoom meeting: {response.text}")
-
-    @classmethod
-    def delete_meeting(cls, meeting_id):
-        token = cls.generate_api_jwt_token() 
-        headers = {
-            'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/json'
-        }
-        
-        response = requests.delete(
-            f'{cls.BASE_URL}/meetings/{meeting_id}',
-            headers=headers
-        )
-        
-        if response.status_code != 204:
-            raise Exception(f"Failed to delete Zoom meeting: {response.text}")
-
-    @classmethod
-    def get_meeting_recordings(cls, meeting_id):
-        token = cls.generate_api_jwt_token()  
-        headers = {
-            'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/json'
-        }
-        
-        response = requests.get(
-            f'{cls.BASE_URL}/meetings/{meeting_id}/recordings',
-            headers=headers
-        )
-        
-        if response.status_code == 200:
-            return response.json()
-        else:
-            raise Exception(f"Failed to get meeting recordings: {response.text}")
-
-    @classmethod
-    def generate_sdk_signature(cls, meeting_number: str, role: int = 0) -> str:
-        return cls.generate_sdk_jwt_token(meeting_number, role)
