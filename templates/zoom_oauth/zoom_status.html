@@ -10,7 +10,7 @@
                 </div>
                 <div class="card-body">
                     {% if user.zoom_token %}
-                        <div class="alert alert-success">
+                        <div class="alert alert-primary">
                             <h5 class="alert-heading">
                                 <i class="fas fa-check-circle me-2"></i>Connected to Zoom!
                             </h5>
@@ -50,7 +50,7 @@
                                             <div class="d-flex w-100 justify-content-between">
                                                 <h6 class="mb-1">{{ meeting.topic|default:"Untitled Meeting" }}</h6>
                                                 <small>
-                                                    <span class="badge {% if meeting.status == 'scheduled' %}bg-primary{% elif meeting.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                                    <span class="badge {% if meeting.status == 'scheduled' %}bg-primary{% elif meeting.status == 'in_progress' %}bg-accent{% else %}bg-secondary{% endif %}">
                                                         {{ meeting.status|title }}
                                                     </span>
                                                 </small>
@@ -61,7 +61,7 @@
                                                     {% if meeting.meeting_type == 'auto' %}
                                                         <span class="badge bg-success ms-2">Auto Created</span>
                                                     {% else %}
-                                                        <span class="badge bg-info ms-2">Manual Entry</span>
+                                                        <span class="badge bg-accent ms-2">Manual Entry</span>
                                                     {% endif %}
                                                 </small>
                                             </p>
@@ -71,7 +71,7 @@
                             </div>
                         {% endif %}
                     {% else %}
-                        <div class="alert alert-warning">
+                        <div class="alert alert-secondary">
                             <h5 class="alert-heading">
                                 <i class="fas fa-exclamation-triangle me-2"></i>Not Connected to Zoom
                             </h5>

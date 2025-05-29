@@ -12,11 +12,13 @@
     <!-- Custom CSS -->
     <style>
         :root {
-            --primary-color: #2D8CFF;
-            --secondary-color: #0E71EB;
-            --accent-color: #0E71EB;
+            --primary-color: #6A5ACD;  /* Slate Blue - lighter indigo */
+            --secondary-color: #8A7ADB;  /* Lighter Slate Blue */
+            --accent-color: #9F8FFF;  /* Very Light Indigo */
             --text-color: #2C3E50;
             --light-bg: #F8F9FA;
+            --indigo-light: #E6E6FA;  /* Lavender - very light indigo */
+            --indigo-hover: #483D8B;  /* Dark Slate Blue - for hover states */
         }
         
         body {
@@ -27,12 +29,20 @@
         
         .navbar {
             background-color: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(106, 90, 205, 0.1);
         }
         
         .navbar-brand {
             color: var(--primary-color) !important;
             font-weight: 600;
+        }
+
+        .nav-link {
+            color: var(--text-color) !important;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-color) !important;
         }
         
         .btn-primary {
@@ -41,18 +51,31 @@
         }
         
         .btn-primary:hover {
-            background-color: var(--secondary-color);
-            border-color: var(--secondary-color);
+            background-color: var(--indigo-hover);
+            border-color: var(--indigo-hover);
+        }
+
+        .btn-outline-primary {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-outline-primary:hover {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
         }
         
         .card {
             border: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 4px rgba(106, 90, 205, 0.05);
             transition: transform 0.2s;
+            background-color: white;
         }
         
         .card:hover {
             transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(106, 90, 205, 0.1);
         }
         
         .meeting-card {
@@ -60,18 +83,118 @@
         }
         
         .meeting-card.upcoming {
-            border-left-color: #28a745;
+            border-left-color: var(--secondary-color);
         }
         
         .meeting-card.past {
-            border-left-color: #6c757d;
+            border-left-color: var(--accent-color);
+        }
+
+        .alert-info {
+            background-color: var(--indigo-light);
+            border-color: var(--accent-color);
+            color: var(--indigo-hover);
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--indigo-light);
+            color: var(--primary-color);
+        }
+
+        .dropdown-item.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .badge.bg-primary {
+            background-color: var(--primary-color) !important;
+        }
+
+        .badge.bg-info {
+            background-color: var(--accent-color) !important;
+            color: var(--text-color);
         }
         
         .footer {
             background-color: white;
             padding: 1rem 0;
             margin-top: 3rem;
-            box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 -2px 4px rgba(106, 90, 205, 0.1);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--light-bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color);
+        }
+
+        .alert-primary {
+            background-color: var(--indigo-light);
+            border-color: var(--primary-color);
+            color: var(--indigo-hover);
+        }
+
+        .alert-secondary {
+            background-color: var(--light-bg);
+            border-color: var(--secondary-color);
+            color: var(--text-color);
+        }
+
+        .alert-link {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .alert-link:hover {
+            color: var(--indigo-hover);
+            text-decoration: underline;
+        }
+
+        .bg-accent {
+            background-color: var(--accent-color) !important;
+        }
+
+        .text-accent {
+            color: var(--accent-color) !important;
+        }
+
+        .border-accent {
+            border-color: var(--accent-color) !important;
+        }
+
+        .btn-accent {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: var(--text-color);
+        }
+
+        .btn-accent:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-outline-accent {
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        .btn-outline-accent:hover {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: var(--text-color);
         }
     </style>
     {% block extra_css %}{% endblock %}
@@ -81,7 +204,7 @@
     <nav class="navbar navbar-expand-lg navbar-light">
         <div class="container">
             <a class="navbar-brand" href="{% url 'home' %}">
-                <i class="fas fa-video me-2"></i>Zoom POC
+                <i class="fas fa-video me-2"></i>flimix
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
