@@ -24,48 +24,77 @@
                     <h3 class="card-title mb-0">{{ meeting.topic|default:"Untitled Meeting" }}</h3>
                 </div>
                 <div class="card-body">
-                    <div class="row">
+                    <div class="row mb-4">
                         <div class="col-md-6">
-                            <dl class="row">
-                                <dt class="col-sm-4">Meeting ID:</dt>
-                                <dd class="col-sm-8">{{ meeting.meeting_id }}</dd>
-
-                                <dt class="col-sm-4">Password:</dt>
-                                <dd class="col-sm-8">{{ meeting.password }}</dd>
-
-                                <dt class="col-sm-4">Start Time:</dt>
-                                <dd class="col-sm-8">{{ meeting.start_time|date:"M d, Y H:i" }}</dd>
-
-                                <dt class="col-sm-4">Host:</dt>
-                                <dd class="col-sm-8">{{ meeting.host }}</dd>
-
-                                <dt class="col-sm-4">Type:</dt>
-                                <dd class="col-sm-8">
-                                    <span class="badge {% if meeting.meeting_type == 'auto' %}bg-success{% else %}bg-info{% endif %}">
-                                        {{ meeting.get_meeting_type_display }}
-                                    </span>
-                                </dd>
-
-                                <dt class="col-sm-4">Status:</dt>
-                                <dd class="col-sm-8">
-                                    <span class="badge {% if meeting.status == 'scheduled' %}bg-primary{% elif meeting.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}">
+                            <h5 class="card-title">{{ meeting.topic }}</h5>
+                            <p class="text-muted">
+                                <i class="fas fa-clock"></i> {{ meeting.start_time|date:"M d, Y H:i" }}
+                                {% if meeting.end_time %}
+                                    - {{ meeting.end_time|date:"M d, Y H:i" }}
+                                {% endif %}
+                            </p>
+                            <p class="text-muted">
+                                <i class="fas fa-hourglass-half"></i> Duration: {{ meeting.duration }} minutes
+                            </p>
+                            <p class="text-muted">
+                                <i class="fas fa-user"></i> Host: {{ meeting.host }}
+                            </p>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            {% if is_host %}
+                                {% if meeting.status == 'ready' %}
+                                    <a href="{% url 'zoom_oauth:start_meeting' meeting.id %}" class="btn btn-primary">
+                                        <i class="fas fa-play"></i> Start Meeting
+                                    </a>
+                                {% elif meeting.status == 'in_progress' %}
+                                    <div class="btn-group">
+                                        <a href="{% url 'zoom_oauth:join_meeting' meeting.meeting_id %}" class="btn btn-success">
+                                            <i class="fas fa-video"></i> Join Meeting
+                                        </a>
+                                        <button class="btn btn-danger" onclick="updateMeetingStatus('{{ meeting.id }}', 'ended')">
+                                            <i class="fas fa-stop"></i> End Meeting
+                                        </button>
+                                    </div>
+                                {% else %}
+                                    <span class="badge {% if meeting.status == 'scheduled' %}bg-primary{% elif meeting.status == 'ready' %}bg-secondary{% elif meeting.status == 'in_progress' %}bg-accent{% elif meeting.status == 'ended' %}bg-success{% elif meeting.status == 'cancelled' %}bg-danger{% else %}bg-secondary{% endif %}">
                                         {{ meeting.status|title }}
                                     </span>
-                                </dd>
-                            </dl>
-                        </div>
-                        <div class="col-md-6">
-                            <div>
-                                {% if user == meeting.user %}
-                                    <a href="{% url 'zoom_oauth:start_meeting' meeting.id %}" class="btn btn-success btn-sm">Start</a>
-                                {% else %}
-                                    <button class="btn btn-primary btn-sm join-meeting"
-                                            data-meeting-id="{{ meeting.meeting_id }}"
-                                            data-meeting-passcode="{{ meeting.password }}">
-                                        Join
-                                    </button>
                                 {% endif %}
-                            </div>
+                            {% else %}
+                                {% if meeting.status == 'ready' or meeting.status == 'in_progress' %}
+                                    <a href="{% url 'zoom_oauth:join_meeting' meeting.meeting_id %}" class="btn btn-success">
+                                        <i class="fas fa-sign-in-alt"></i> Join Meeting
+                                    </a>
+                                {% else %}
+                                    <span class="badge {% if meeting.status == 'scheduled' %}bg-primary{% elif meeting.status == 'ready' %}bg-secondary{% elif meeting.status == 'in_progress' %}bg-accent{% elif meeting.status == 'ended' %}bg-success{% elif meeting.status == 'cancelled' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                        {{ meeting.status|title }}
+                                    </span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="meeting-info">
+                        <h6>Meeting Information</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>Meeting ID:</th>
+                                    <td>{{ meeting.meeting_id }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Password:</th>
+                                    <td>{{ meeting.password }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Status:</th>
+                                    <td>
+                                        <span class="badge {% if meeting.status == 'scheduled' %}bg-primary{% elif meeting.status == 'ready' %}bg-secondary{% elif meeting.status == 'in_progress' %}bg-accent{% elif meeting.status == 'ended' %}bg-success{% elif meeting.status == 'cancelled' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                            {{ meeting.status|title }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -160,27 +189,52 @@ document.addEventListener('DOMContentLoaded', function() {
     const meetingIdInput = document.getElementById('meetingId');
     const passcodeInput = document.getElementById('passcode');
 
-    if (!joinMeetingModalEl || !joinMeetingForm || !meetingIdInput || !passcodeInput) {
-        // Modal or fields not present, do nothing
-        return;
+    if (joinMeetingModalEl && joinMeetingForm && meetingIdInput && passcodeInput) {
+        const joinMeetingModal = new bootstrap.Modal(joinMeetingModalEl);
+
+        document.querySelectorAll('.join-meeting').forEach(button => {
+            button.addEventListener('click', function() {
+                meetingIdInput.value = this.dataset.meetingId;
+                passcodeInput.value = this.dataset.meetingPasscode;
+                joinMeetingModal.show();
+            });
+        });
+
+        joinMeetingForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const meetingId = meetingIdInput.value;
+            const passcode = passcodeInput.value;
+            window.location.href = `/zoom/oauth/meetings/${meetingId}/join/?passcode=${passcode}`;
+        });
     }
 
-    const joinMeetingModal = new bootstrap.Modal(joinMeetingModalEl);
-
-    document.querySelectorAll('.join-meeting').forEach(button => {
-        button.addEventListener('click', function() {
-            meetingIdInput.value = this.dataset.meetingId;
-            passcodeInput.value = this.dataset.meetingPasscode;
-            joinMeetingModal.show();
+    // Status update functionality
+    function updateMeetingStatus(meetingId, newStatus) {
+        if (!confirm('Are you sure you want to ' + newStatus + ' this meeting?')) {
+            return;
+        }
+        
+        fetch(`/zoom/oauth/meetings/${meetingId}/update-status/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: `status=${newStatus}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.reload();
+            } else {
+                alert('Error updating meeting status: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating meeting status');
         });
-    });
-
-    joinMeetingForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const meetingId = meetingIdInput.value;
-        const passcode = passcodeInput.value;
-        window.location.href = `/zoom/oauth/meetings/${meetingId}/join/?passcode=${passcode}`;
-    });
+    }
 });
 </script>
 {% endblock %} 

@@ -1,13 +1,17 @@
 {% extends 'base.html' %}
 
-{% block title %}Welcome to Zoom POC{% endblock %}
+{% block title %}Welcome to flimix{% endblock %}
 
 {% block content %}
 <div class="row align-items-center min-vh-75">
     <div class="col-lg-6">
-        <h1 class="display-4 fw-bold mb-4">Welcome to Zoom POC</h1>
+        <h1 class="display-4 fw-bold mb-4">Welcome to flimix</h1>
         <p class="lead mb-4">
-            A simple platform for managing and joining Zoom meetings. Create meetings automatically or manually enter meeting details.
+            {% if user.is_superuser or user.is_staff %}
+                A simple platform for managing and joining flimix meetings. Create meetings automatically or manually enter meeting details.
+            {% else %}
+                A simple platform for joining flimix meetings.
+            {% endif %}
         </p>
         {% if user.is_authenticated %}
             {% if user.is_superuser or user.is_staff %}
@@ -37,72 +41,5 @@
             </a>
         {% endif %}
     </div>
-    <div class="col-lg-6 d-none d-lg-block">
-        <img src="https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
-             alt="Video Conference" 
-             class="img-fluid rounded shadow-lg">
-    </div>
-</div>
-
-{% if user.is_authenticated %}
-<div class="row mt-5">
-    <div class="col-12">
-        <h2 class="h3 mb-4">Quick Actions</h2>
-    </div>
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h3 class="h5 card-title">
-                    <i class="fas fa-calendar-check text-primary me-2"></i>
-                    Upcoming Meetings
-                </h3>
-                <p class="card-text">
-                    View and manage your upcoming meetings. Join meetings with a single click.
-                </p>
-                <a href="{% url 'zoom_oauth:meeting_list' %}" class="btn btn-outline-primary">
-                    <i class="fas fa-calendar-alt me-2"></i>View Meetings
-                </a>
-            </div>
-        </div>
-    </div>
-    {% if user.is_superuser or user.is_staff %}
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h3 class="h5 card-title">
-                    <i class="fas fa-plus-circle text-primary me-2"></i>
-                    Create Meeting
-                </h3>
-                <p class="card-text">
-                    Create meetings automatically through Zoom or manually enter meeting details.
-                </p>
-                <a href="{% url 'zoom_oauth:create_meeting' %}" class="btn btn-outline-primary">
-                    <i class="fas fa-plus me-2"></i>Create Meeting
-                </a>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-    {% if user.is_superuser or user.is_staff %}
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h3 class="h5 card-title">
-                    <i class="fab fa-zoom text-primary me-2"></i>
-                    Zoom Status
-                </h3>
-                <p class="card-text">
-                    Check your Zoom connection status and manage your integration settings.
-                </p>
-                <a href="{% url 'zoom_oauth:status' %}" class="btn btn-outline-primary">
-                    <i class="fas fa-cog me-2"></i>Manage Zoom
-                </a>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-</div>
-{% endif %}
-
 </div>
 {% endblock %} 
