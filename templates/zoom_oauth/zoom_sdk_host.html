@@ -1,0 +1,52 @@
+{% block title %}Start Meeting{% endblock %}
+{% block extra_css %}
+<style>
+    #zmmtg-root {
+        width: 100vw;
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 9999;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div id="zmmtg-root"></div>
+<script src="https://source.zoom.us/3.13.2/lib/vendor/react.min.js"></script>
+  <script src="https://source.zoom.us/3.13.2/lib/vendor/react-dom.min.js"></script>
+  <script src="https://source.zoom.us/3.13.2/lib/vendor/redux.min.js"></script>
+  <script src="https://source.zoom.us/3.13.2/lib/vendor/redux-thunk.min.js"></script>
+  <script src="https://source.zoom.us/3.13.2/lib/vendor/lodash.min.js"></script>
+  <script src="https://source.zoom.us/zoom-meeting-3.13.2.min.js"></script>
+<script>
+    const meetingNumber = "{{ meeting.meeting_id }}";
+    const passWord = "{{ meeting.password }}";
+    const userName = "{{ user.get_full_name|default:user.email }}";
+    const userEmail = "{{ user.email }}";
+    const role = 1;
+    const sdkKey = "{{ ZOOM_SDK_KEY }}";
+    const signature = "{{ signature }}";
+    document.addEventListener('DOMContentLoaded', function() {
+        ZoomMtg.init({
+            leaveUrl: window.location.origin,
+            success: function() {
+                ZoomMtg.join({
+                    meetingNumber: meetingNumber,
+                    userName: userName,
+                    signature: signature,
+                    sdkKey: sdkKey,
+                    userEmail: userEmail,
+                    passWord: passWord,
+                    success: function(res) {
+                        console.log('Join meeting success');
+                    },
+                    error: function(res) {
+                        alert('Error joining meeting: ' + res.errorMessage);
+                    }
+                });
+            }
+        });
+    });
+</script>
+{% endblock %} 

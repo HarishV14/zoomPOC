@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'zoom_oauth:meeting_list' %}">Meetings</a></li>
+                    <li class="breadcrumb-item active">Meeting Details</li>
+                </ol>
+            </nav>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">{{ meeting.topic|default:"Untitled Meeting" }}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Meeting ID:</dt>
+                                <dd class="col-sm-8">{{ meeting.meeting_id }}</dd>
+
+                                <dt class="col-sm-4">Password:</dt>
+                                <dd class="col-sm-8">{{ meeting.password }}</dd>
+
+                                <dt class="col-sm-4">Start Time:</dt>
+                                <dd class="col-sm-8">{{ meeting.start_time|date:"M d, Y H:i" }}</dd>
+
+                                <dt class="col-sm-4">Host:</dt>
+                                <dd class="col-sm-8">{{ meeting.host }}</dd>
+
+                                <dt class="col-sm-4">Type:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge {% if meeting.meeting_type == 'auto' %}bg-success{% else %}bg-info{% endif %}">
+                                        {{ meeting.get_meeting_type_display }}
+                                    </span>
+                                </dd>
+
+                                <dt class="col-sm-4">Status:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge {% if meeting.status == 'scheduled' %}bg-primary{% elif meeting.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ meeting.status|title }}
+                                    </span>
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <div>
+                                {% if user == meeting.user %}
+                                    <a href="{% url 'zoom_oauth:start_meeting' meeting.id %}" class="btn btn-success btn-sm">Start</a>
+                                {% else %}
+                                    <button class="btn btn-primary btn-sm join-meeting"
+                                            data-meeting-id="{{ meeting.meeting_id }}"
+                                            data-meeting-passcode="{{ meeting.password }}">
+                                        Join
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Participants</h4>
+                </div>
+                <div class="card-body">
+                    {% if participants %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Join Time</th>
+                                        <th>Leave Time</th>
+                                        <th>Duration</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for participant in participants %}
+                                        <tr>
+                                            <td>{{ participant.name }}</td>
+                                            <td>{{ participant.email }}</td>
+                                            <td>{{ participant.join_time|date:"M d, Y H:i:s" }}</td>
+                                            <td>
+                                                {% if participant.leave_time %}
+                                                    {{ participant.leave_time|date:"M d, Y H:i:s" }}
+                                                {% else %}
+                                                    <span class="badge bg-success">Active</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if participant.duration %}
+                                                    {{ participant.duration|floatformat:0 }} seconds
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p class="mb-0">No participants have joined this meeting yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <!-- Join Meeting Modal for Users -->
+<div class="modal fade" id="joinMeetingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Join Meeting</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="joinMeetingForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="meetingId" class="form-label">Meeting ID</label>
+                        <input type="text" class="form-control" id="meetingId" name="meeting_id" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="passcode" class="form-label">Passcode</label>
+                        <input type="text" class="form-control" id="passcode" name="passcode" readonly>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Join with Zoom SDK</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div> 
+    </div>
+</div>
+{% endblock %} 
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const joinMeetingModalEl = document.getElementById('joinMeetingModal');
+    const joinMeetingForm = document.getElementById('joinMeetingForm');
+    const meetingIdInput = document.getElementById('meetingId');
+    const passcodeInput = document.getElementById('passcode');
+
+    if (!joinMeetingModalEl || !joinMeetingForm || !meetingIdInput || !passcodeInput) {
+        // Modal or fields not present, do nothing
+        return;
+    }
+
+    const joinMeetingModal = new bootstrap.Modal(joinMeetingModalEl);
+
+    document.querySelectorAll('.join-meeting').forEach(button => {
+        button.addEventListener('click', function() {
+            meetingIdInput.value = this.dataset.meetingId;
+            passcodeInput.value = this.dataset.meetingPasscode;
+            joinMeetingModal.show();
+        });
+    });
+
+    joinMeetingForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const meetingId = meetingIdInput.value;
+        const passcode = passcodeInput.value;
+        window.location.href = `/zoom/oauth/meetings/${meetingId}/join/?passcode=${passcode}`;
+    });
+});
+</script>
+{% endblock %} 

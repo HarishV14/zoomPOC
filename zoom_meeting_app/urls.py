@@ -24,6 +24,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('apps.accounts.urls')),
     path('meetings/', include('apps.meetings.urls')),
+    path('zoom/oauth/', include('zoom_oauth.urls')),
     path('', TemplateView.as_view(template_name='home.html'), name='home'),
 ]
 

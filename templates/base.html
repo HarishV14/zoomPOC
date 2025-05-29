@@ -81,7 +81,7 @@
     <nav class="navbar navbar-expand-lg navbar-light">
         <div class="container">
             <a class="navbar-brand" href="{% url 'home' %}">
-                <i class="fas fa-video me-2"></i>Zoom Meeting App
+                <i class="fas fa-video me-2"></i>Zoom POC
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -89,14 +89,19 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'meetings:meeting_list' %}">
+                        <a class="nav-link" href="{% url 'zoom_oauth:meeting_list' %}">
                             <i class="fas fa-calendar-alt me-1"></i> Meetings
                         </a>
                     </li>
-                    {% if user.is_admin %}
+                    {% if user.is_superuser or user.is_staff %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'meetings:meeting_create' %}">
+                        <a class="nav-link" href="{% url 'zoom_oauth:create_meeting' %}">
                             <i class="fas fa-plus me-1"></i> Create Meeting
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'zoom_oauth:status' %}">
+                            <i class="fab fa-zoom me-1"></i> Zoom Status
                         </a>
                     </li>
                     {% endif %}
@@ -148,13 +153,6 @@
     <main class="container py-4">
         {% block content %}{% endblock %}
     </main>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container text-center">
-            <p class="mb-0">&copy; {% now "Y" %} Zoom Meeting App. All rights reserved.</p>
-        </div>
-    </footer>
 
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

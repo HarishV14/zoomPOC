@@ -1,29 +1,39 @@
 {% extends 'base.html' %}
 
-{% block title %}Welcome to Zoom Meeting App{% endblock %}
+{% block title %}Welcome to Zoom POC{% endblock %}
 
 {% block content %}
 <div class="row align-items-center min-vh-75">
     <div class="col-lg-6">
-        <h1 class="display-4 fw-bold mb-4">Welcome to Zoom Meeting App</h1>
+        <h1 class="display-4 fw-bold mb-4">Welcome to Zoom POC</h1>
         <p class="lead mb-4">
-            A simple platform for managing and joining Zoom meetings.
+            A simple platform for managing and joining Zoom meetings. Create meetings automatically or manually enter meeting details.
         </p>
         {% if user.is_authenticated %}
-            {% if user.is_admin %}
-            <a href="{% url 'meetings:meeting_create' %}" class="btn btn-primary btn-lg me-3">
-                Create Meeting
-            </a>
+            {% if user.is_superuser or user.is_staff %}
+                {% if not user.zoom_token %}
+                <div class="alert alert-warning mb-4">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Please connect your Zoom account to create meetings automatically.
+                    <a href="{% url 'zoom_oauth:initiate' %}" class="alert-link">Connect Now</a>
+                </div>
+                {% endif %}
             {% endif %}
-            <a href="{% url 'meetings:meeting_list' %}" class="btn btn-outline-primary btn-lg">
-                View Meetings
+            {% if user.is_superuser or user.is_staff %}
+            <a href="{% url 'zoom_oauth:create_meeting' %}" class="btn btn-primary btn-lg me-3">
+                <i class="fas fa-plus me-2"></i>Create Meeting
             </a>
+
+            {% endif %}
+            <a href="{% url 'zoom_oauth:meeting_list' %}" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-calendar-alt me-2"></i>View Meetings
+                </a>
         {% else %}
             <a href="{% url 'login' %}" class="btn btn-primary btn-lg me-3">
-                Login
+                <i class="fas fa-sign-in-alt me-2"></i>Login
             </a>
             <a href="{% url 'signup' %}" class="btn btn-outline-primary btn-lg">
-                Sign Up
+                <i class="fas fa-user-plus me-2"></i>Sign Up
             </a>
         {% endif %}
     </div>
@@ -49,13 +59,13 @@
                 <p class="card-text">
                     View and manage your upcoming meetings. Join meetings with a single click.
                 </p>
-                <a href="{% url 'meetings:meeting_list' %}" class="btn btn-outline-primary">
-                    View Meetings
+                <a href="{% url 'zoom_oauth:meeting_list' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-calendar-alt me-2"></i>View Meetings
                 </a>
             </div>
         </div>
     </div>
-    {% if user.is_admin %}
+    {% if user.is_superuser or user.is_staff %}
     <div class="col-md-4 mb-4">
         <div class="card h-100">
             <div class="card-body">
@@ -64,73 +74,35 @@
                     Create Meeting
                 </h3>
                 <p class="card-text">
-                    Schedule a new meeting and invite participants. Set up recurring meetings easily.
+                    Create meetings automatically through Zoom or manually enter meeting details.
                 </p>
-                <a href="{% url 'meetings:meeting_create' %}" class="btn btn-outline-primary">
-                    Create Meeting
+                <a href="{% url 'zoom_oauth:create_meeting' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-plus me-2"></i>Create Meeting
                 </a>
             </div>
         </div>
     </div>
     {% endif %}
+    {% if user.is_superuser or user.is_staff %}
     <div class="col-md-4 mb-4">
         <div class="card h-100">
             <div class="card-body">
                 <h3 class="h5 card-title">
-                    <i class="fas fa-history text-primary me-2"></i>
-                    Past Meetings
+                    <i class="fab fa-zoom text-primary me-2"></i>
+                    Zoom Status
                 </h3>
                 <p class="card-text">
-                    Access recordings and details of your past meetings. Review meeting history.
+                    Check your Zoom connection status and manage your integration settings.
                 </p>
-                <a href="{% url 'meetings:meeting_list' %}" class="btn btn-outline-primary">
-                    View History
+                <a href="{% url 'zoom_oauth:status' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-cog me-2"></i>Manage Zoom
                 </a>
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
 {% endif %}
 
-<div class="row mt-5">
-    <div class="col-12">
-        <h2 class="h3 mb-4">Features</h2>
-    </div>
-    <div class="col-md-3 mb-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <i class="fas fa-video fa-3x text-primary mb-3"></i>
-                <h3 class="h5">HD Video Meetings</h3>
-                <p class="card-text">High-quality video conferencing with crystal clear audio.</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
-                <h3 class="h5">Secure Meetings</h3>
-                <p class="card-text">End-to-end encryption and password protection for all meetings.</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <i class="fas fa-calendar-alt fa-3x text-primary mb-3"></i>
-                <h3 class="h5">Easy Scheduling</h3>
-                <p class="card-text">Simple meeting scheduling with calendar integration.</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <i class="fas fa-users fa-3x text-primary mb-3"></i>
-                <h3 class="h5">User Management</h3>
-                <p class="card-text">Manage participants and control meeting access.</p>
-            </div>
-        </div>
-    </div>
 </div>
 {% endblock %} 

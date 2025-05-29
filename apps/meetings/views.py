@@ -71,7 +71,6 @@ def meeting_detail(request, pk):
 def meeting_room(request, pk):
     meeting = get_object_or_404(Meeting, pk=pk)
     
-    # Add participant to meeting if not already added
     if not meeting.participants.filter(id=request.user.id).exists():
         meeting.participants.add(request.user)
     
@@ -83,37 +82,12 @@ def meeting_room(request, pk):
 
 @login_required
 @require_POST
-def meeting_join(request, pk):
-    meeting = get_object_or_404(Meeting, pk=pk)
-    
-    try:
-        form = MeetingJoinForm(meeting, request.POST)
-        if form.is_valid():
-            meeting.participants.add(request.user)
-            return JsonResponse({
-                'status': 'success',
-                'join_url': meeting.join_url
-            })
-        
-        return JsonResponse({
-            'status': 'error',
-            'errors': form.errors
-        }, status=400)
-    except Exception as e:
-        return JsonResponse({
-            'status': 'error',
-            'error': str(e)
-        }, status=500)
-
-@login_required
-@require_POST
 def meeting_signature(request, meeting_id):
     try:
         meeting = get_object_or_404(Meeting, zoom_meeting_id=meeting_id)
         data = json.loads(request.body)
         role = data.get('role', 0)
         
-        # Generate signature using the Zoom API
         signature = ZoomAPI.generate_sdk_signature(
             meeting_number=meeting_id,
             role=role

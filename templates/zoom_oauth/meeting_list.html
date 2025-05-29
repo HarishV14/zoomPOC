@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}Meetings{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2 mb-0">Meetings</h1>
+    {% if user.is_admin %}
+    <a href="{% url 'zoom_oauth:create_meeting' %}" class="btn btn-primary">
+        Create Meeting
+    </a>
+    {% endif %}
+</div>
+
+<!-- Upcoming Meetings -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h2 class="h5 mb-0">Upcoming Meetings</h2>
+    </div>
+    <div class="card-body p-0">
+        {% if upcoming_meetings %}
+        <div class="list-group list-group-flush">
+            {% for meeting in upcoming_meetings %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="h6 mb-1">
+                        <a href="{% url 'zoom_oauth:meeting_detail' meeting.id %}">
+                            {{ meeting.topic }}
+                        </a>
+                        <span class="badge bg-secondary ms-2">{{ meeting.meeting_id }}</span>
+                    </h3>
+                    <div>
+                        <small>
+                            {{ meeting.start_time|date:"M d, Y H:i" }}
+                            {% if meeting.meeting_type == 'auto' %}
+                                <span class="badge bg-success ms-2">Auto</span>
+                            {% else %}
+                                <span class="badge bg-info ms-2">Manual</span>
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+                <div>
+                    {% if user == meeting.user %}
+                        <a href="{% url 'zoom_oauth:start_meeting' meeting.id %}" class="btn btn-success btn-sm">Start</a>
+                    {% else %}
+                        <button class="btn btn-primary btn-sm join-meeting"
+                                data-meeting-id="{{ meeting.meeting_id }}"
+                                data-meeting-passcode="{{ meeting.password }}">
+                            Join
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <p class="text-muted mb-0">No upcoming meetings scheduled.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Join Meeting Modal for Users -->
+<div class="modal fade" id="joinMeetingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Join Meeting</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="joinMeetingForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="meetingId" class="form-label">Meeting ID</label>
+                        <input type="text" class="form-control" id="meetingId" name="meeting_id" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="passcode" class="form-label">Passcode</label>
+                        <input type="text" class="form-control" id="passcode" name="passcode" readonly>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Join with Zoom SDK</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const joinMeetingModalEl = document.getElementById('joinMeetingModal');
+    const joinMeetingForm = document.getElementById('joinMeetingForm');
+    const meetingIdInput = document.getElementById('meetingId');
+    const passcodeInput = document.getElementById('passcode');
+
+    if (!joinMeetingModalEl || !joinMeetingForm || !meetingIdInput || !passcodeInput) {
+        // Modal or fields not present, do nothing
+        return;
+    }
+
+    const joinMeetingModal = new bootstrap.Modal(joinMeetingModalEl);
+
+    document.querySelectorAll('.join-meeting').forEach(button => {
+        button.addEventListener('click', function() {
+            meetingIdInput.value = this.dataset.meetingId;
+            passcodeInput.value = this.dataset.meetingPasscode;
+            joinMeetingModal.show();
+        });
+    });
+
+    joinMeetingForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const meetingId = meetingIdInput.value;
+        const passcode = passcodeInput.value;
+        window.location.href = `/zoom/oauth/meetings/${meetingId}/join/?passcode=${passcode}`;
+    });
+});
+</script>
+{% endblock %} 
