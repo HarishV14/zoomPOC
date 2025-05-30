@@ -14,4 +14,5 @@ urlpatterns = [
     path('meetings/<int:meeting_id>/start/', views.start_meeting, name='start_meeting'),
     path('meetings/<int:meeting_id>/join/', views.join_meeting, name='join_meeting'),
     path('meetings/<int:meeting_id>/update-status/', views.update_meeting_status, name='update_meeting_status'),
+    path('webhook/', views.zoom_webhook, name='zoom_webhook'),
 ] 
