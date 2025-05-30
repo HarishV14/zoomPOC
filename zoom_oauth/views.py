@@ -5,10 +5,12 @@ from django.conf import settings
 from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from datetime import datetime
-import re
+from django.views.decorators.csrf import csrf_exempt
 import requests
-import pytz
+import json
+import hmac
+import hashlib
+import base64
 
 from .utils import ZoomAPI, MeetingHelper
 from .models import ZoomOAuthToken, ZoomMeeting
@@ -148,6 +150,8 @@ def _handle_manual_meeting(request):
         
         # Parse meeting time and determine status
         meeting_type = zoom_meeting.get('type', 1)
+        if meeting_type == 1:
+            raise ValueError('Already meeting started')
         time_field = 'start_time' if meeting_type == 2 else 'created_at'
         start_time = MeetingHelper.parse_zoom_time(zoom_meeting.get(time_field))
         
@@ -308,5 +312,129 @@ def update_meeting_status(request, meeting_id):
             'is_startable': meeting.is_startable,
             'is_joinable': meeting.is_joinable
         })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+def validate_webhook_url(plain_token):
+    if not plain_token:
+        return None
+        
+    hash_for_zoom = hmac.new(
+        key=settings.ZOOM_WEBHOOK_SECRET_TOKEN.encode('utf-8'),
+        msg=plain_token.encode('utf-8'),
+        digestmod=hashlib.sha256
+    ).digest()
+    
+    return base64.b64encode(hash_for_zoom).decode('utf-8')
+
+def handle_meeting_ended(meeting):
+    meeting.update_status('ended')
+
+def handle_participant_joined(meeting, participant_data):
+    if not participant_data:
+        print("No participant data received")
+        return
+        
+    try:
+        participant_id = participant_data.get('id') or participant_data.get('participant_uuid')
+        if not participant_id:
+            print("No participant identifier found in data:", participant_data)
+            return
+            
+        email = participant_data.get('email')
+        
+        meeting.participants.create(
+            participant_id=participant_id,
+            name=participant_data.get('user_name', 'Unknown'),
+            email=email,
+            join_time=timezone.now()
+        )
+        print(f"Successfully created participant record for {participant_data.get('user_name')}")
+    except Exception as e:
+        print(f"Error creating participant record: {str(e)}")
+        print("Participant data:", participant_data)
+        raise
+
+def handle_participant_left(meeting, participant_data):
+    if not participant_data:
+        print("No participant data received for left event")
+        return
+        
+    try:
+        participant_id = participant_data.get('id') or participant_data.get('participant_uuid')
+        if not participant_id:
+            print("No participant identifier found in left event data:", participant_data)
+            return
+            
+        try:
+            participant = meeting.participants.get(
+                participant_id=participant_id,
+                leave_time__isnull=True
+            )
+            participant.leave_time = timezone.now()
+            if participant.join_time:
+                participant.duration = int((participant.leave_time - participant.join_time).total_seconds())
+            participant.save()
+            print(f"Successfully updated participant {participant.name} leave time")
+        except meeting.participants.model.DoesNotExist:
+            print(f"Participant {participant_data.get('user_name')} not found for meeting {meeting.meeting_id}")
+    except Exception as e:
+        print(f"Error handling participant left event: {str(e)}")
+        print("Participant data:", participant_data)
+        raise
+
+def handle_meeting_started(meeting):
+    meeting.update_status('in_progress')
+
+@csrf_exempt
+@require_POST
+def zoom_webhook(request):
+    try:
+        payload = json.loads(request.body)
+        event = payload.get('event')
+        
+        if event == 'endpoint.url_validation':
+            plain_token = payload.get('payload', {}).get('plainToken')
+            encrypted_token = validate_webhook_url(plain_token)
+            if not encrypted_token:
+                return JsonResponse({'error': 'Invalid validation request'}, status=400)
+                
+            return JsonResponse({
+                'plainToken': plain_token,
+                'encryptedToken': encrypted_token
+            })
+        
+        meeting_id = payload.get('payload', {}).get('object', {}).get('id')
+        print("Received webhook event: ", event, " for meeting ", meeting_id)
+        if not meeting_id:
+            print("Meeting ID not found in payload")
+            return JsonResponse({'error': 'Meeting ID not found in payload'}, status=400)
+                    
+        try:
+            meeting = ZoomMeeting.objects.get(meeting_id=meeting_id)
+        except ZoomMeeting.DoesNotExist:
+            return JsonResponse({'error': 'Meeting not found'}, status=404)
+        print("Meeting payload: ", payload)
+        if event == 'meeting.ended':
+            print("Meeting ended event received")
+            handle_meeting_ended(meeting)
+        elif event == 'meeting.participant_joined':
+            print("Participant joined event received")
+            handle_participant_joined(meeting, payload['payload']['object'].get('participant', {}))
+        elif event == 'meeting.participant_left':
+            print("Participant left event received")
+            handle_participant_left(meeting, payload['payload']['object'].get('participant', {}))
+        elif event == 'meeting.started':
+            print("Meeting started event received")
+            handle_meeting_started(meeting)
+        elif event == 'meeting.created':
+            print("Meeting created event received")
+        else:
+            print("Unhandled event type: ", event, " for meeting ", meeting_id)
+        
+        return JsonResponse({'status': 'success'})
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON payload'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

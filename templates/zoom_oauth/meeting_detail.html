@@ -82,10 +82,12 @@
                                     <th>Meeting ID:</th>
                                     <td>{{ meeting.meeting_id }}</td>
                                 </tr>
+                                {% if user.is_admin %}
                                 <tr>
                                     <th>Password:</th>
                                     <td>{{ meeting.password }}</td>
                                 </tr>
+                                {% endif %}
                                 <tr>
                                     <th>Status:</th>
                                     <td>

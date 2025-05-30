@@ -21,7 +21,7 @@
   <script src="https://source.zoom.us/zoom-meeting-3.13.2.min.js"></script>
 <script>
     const meetingNumber = "{{ meeting.meeting_id }}";
-    const passWord = "{{ passcode }}";
+    const passWord = "{{ meeting.password }}";
     const userName = "{{ user.get_full_name|default:user.email }}";
     const userEmail = "{{ user.email }}";
     const role = 0; 
