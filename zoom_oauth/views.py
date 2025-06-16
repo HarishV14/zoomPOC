@@ -110,18 +110,9 @@ def meeting_detail(request, meeting_id):
 @login_required
 def create_meeting(request):
     """Create a new meeting"""
-    if not hasattr(request.user, 'zoom_token'):
-        messages.warning(request, 'Please connect your Zoom account first')
-        return redirect('zoom_oauth:initiate')
-        
     if request.method == 'POST':
-        meeting_type = request.POST.get('meeting_type')
-        
         try:
-            if meeting_type == 'manual':
-                return _handle_manual_meeting(request)
-            else:
-                return _handle_auto_meeting(request)
+            return _handle_manual_meeting(request)
         except ValueError as e:
             messages.error(request, str(e))
         except Exception as e:
@@ -130,7 +121,6 @@ def create_meeting(request):
             
     return render(request, 'zoom_oauth/create_meeting.html', {
         'manual_form': ManualMeetingForm(),
-        'auto_form': AutoMeetingForm()
     })
 
 def _handle_manual_meeting(request):
@@ -142,114 +132,33 @@ def _handle_manual_meeting(request):
         return redirect('zoom_oauth:create_meeting')
 
     try:
-        # Get meeting details from Zoom
-        zoom_meeting = ZoomAPI.get_meeting(
-            request.user.zoom_token.access_token,
-            form.cleaned_data['meeting_id']
-        )
-        
-        # Parse meeting time and determine status
-        meeting_type = zoom_meeting.get('type', 1)
-        if meeting_type == 1:
-            raise ValueError('Already meeting started')
-        time_field = 'start_time' if meeting_type == 2 else 'created_at'
-        start_time = MeetingHelper.parse_zoom_time(zoom_meeting.get(time_field))
-        
-        if not start_time:
-            raise ValueError('Meeting time not found in Zoom')
-            
-        status = MeetingHelper.determine_meeting_status(
-            meeting_type,
-            zoom_meeting.get('status', ''),
-            start_time
-        )
-        
-        # Create meeting
+        # Create meeting directly without Zoom API call
         meeting = ZoomMeeting.objects.create(
             user=request.user,
             meeting_type='manual',
             meeting_id=form.cleaned_data['meeting_id'],
             password=form.cleaned_data['password'],
-            start_time=start_time,
+            start_time=form.cleaned_data['start_time'],
             host=form.cleaned_data['host'],
-            topic=form.cleaned_data.get('topic', zoom_meeting.get('topic', '')),
-            duration=MeetingHelper.get_meeting_duration(zoom_meeting),
-            status=status,
+            topic=form.cleaned_data['topic'] or f"Meeting {form.cleaned_data['meeting_id']}",
+            duration=60,  # Default duration
+            status='scheduled',
         )
         
         messages.success(request, 'Meeting created successfully')
         return redirect('zoom_oauth:meeting_detail', meeting_id=meeting.id)
         
-    except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 404:
-            raise ValueError('Meeting not found in Zoom. Please check the Meeting ID.')
-        elif e.response.status_code == 401:
-            raise ValueError('Unable to access Zoom. Please reconnect your Zoom account.')
-        raise ValueError(f'Error accessing Zoom: {str(e)}')
-
-def _handle_auto_meeting(request):
-    form = AutoMeetingForm(request.POST)
-    if not form.is_valid():
-        for field, errors in form.errors.items():
-            for error in errors:
-                messages.error(request, f'{field}: {error}')
+    except Exception as e:
+        messages.error(request, f'Error creating meeting: {str(e)}')
         return redirect('zoom_oauth:create_meeting')
-
-    # Determine start time based on schedule type
-    schedule_type = form.cleaned_data['schedule_type']
-    start_time = timezone.now() if schedule_type == 'now' else form.cleaned_data['start_time']
-    
-    if schedule_type == 'later' and not start_time:
-        raise ValueError('Start time is required for scheduled meetings')
-
-    # Prepare meeting data
-    meeting_data = {
-        'topic': form.cleaned_data['topic'],
-        'start_time': start_time.isoformat(),
-        'type': 2,
-        'settings': {
-            'host_video': True,
-            'participant_video': True,
-            'join_before_host': False,
-            'mute_upon_entry': True,
-            'waiting_room': True
-        }
-    }
-    
-    try:
-        # Create meeting in Zoom
-        zoom_response = ZoomAPI.create_meeting(
-            request.user.zoom_token.access_token,
-            meeting_data
-        )
-        
-        # Create meeting in database
-        status = 'ready' if schedule_type == 'now' else 'scheduled'
-        meeting = ZoomMeeting.objects.create(
-            user=request.user,
-            meeting_type='auto',
-            meeting_id=zoom_response['id'],
-            password=zoom_response['password'],
-            start_time=start_time,
-            host=zoom_response['host_email'],
-            topic=zoom_response['topic'],
-            status=status,
-        )
-        
-        messages.success(request, 'Meeting created successfully')
-        if status == 'ready':
-            return redirect('zoom_oauth:start_meeting', meeting_id=meeting.id)
-        return redirect('zoom_oauth:meeting_detail', meeting_id=meeting.id)
-        
-    except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 401:
-            raise ValueError('Unable to access Zoom. Please reconnect your Zoom account.')
-        raise ValueError(f'Error creating meeting in Zoom: {str(e)}')
 
 @login_required
 def start_meeting(request, meeting_id):
     """Start a meeting"""
-    meeting = get_object_or_404(ZoomMeeting, id=meeting_id)
+    # Normalize meeting ID (remove non-numeric characters)
+    meeting_id = ''.join(filter(str.isdigit, meeting_id))
+    print(meeting_id,"meeting_id")
+    meeting = get_object_or_404(ZoomMeeting, meeting_id=meeting_id)
     
     if not meeting.is_host_user(request.user):
         messages.error(request, 'Only the host can start the meeting')
@@ -271,6 +180,9 @@ def start_meeting(request, meeting_id):
 @login_required
 def join_meeting(request, meeting_id):
     """Join a meeting"""
+    # Normalize meeting ID (remove non-numeric characters)
+    meeting_id = ''.join(filter(str.isdigit, meeting_id))
+    print(meeting_id,"meeting_id")
     meeting = get_object_or_404(ZoomMeeting, meeting_id=meeting_id)
     meeting.check_and_update_status()
     
@@ -279,13 +191,11 @@ def join_meeting(request, meeting_id):
         return redirect('zoom_oauth:meeting_detail', meeting_id=meeting.id)
     
     is_host = meeting.is_host_user(request.user)
-    passcode = request.GET.get('passcode')
     signature = ZoomAPI.generate_signature(meeting.meeting_id, role=1 if is_host else 0)
     
     template = 'zoom_oauth/zoom_sdk_host.html' if is_host else 'zoom_oauth/zoom_sdk_join.html'
     return render(request, template, {
         'meeting': meeting,
-        'passcode': passcode,
         'signature': signature,
         'ZOOM_SDK_KEY': settings.ZOOM_CLIENT_ID,
     })

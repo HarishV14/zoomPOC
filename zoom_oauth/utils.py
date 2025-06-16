@@ -84,18 +84,21 @@ class ZoomAPI:
 
     @staticmethod
     def generate_signature(meeting_number, role):
-        """Generate JWT signature for Zoom SDK"""
+        meeting_number = ''.join(filter(str.isdigit, str(meeting_number)))
+        
         iat = int(time.time()) - 30
-        exp = iat + 60 * 5
+        exp = iat + 60 * 60 * 2  
+        print(meeting_number,"meeting_number")
         payload = {
             'sdkKey': settings.ZOOM_CLIENT_ID,
-            'mn': str(meeting_number),
+            'mn': meeting_number,
             'role': role,
             'iat': iat,
             'exp': exp,
             'appKey': settings.ZOOM_CLIENT_ID,
             'tokenExp': exp
         }
+        
         return jwt.encode(payload, settings.ZOOM_CLIENT_SECRET, algorithm='HS256')
 
 class MeetingHelper:
