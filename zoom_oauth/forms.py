@@ -25,11 +25,26 @@ class ManualMeetingForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
+    start_time = forms.DateTimeField(
+        widget=forms.DateTimeInput(
+            attrs={
+                'class': 'form-control',
+                'type': 'datetime-local'
+            }
+        )
+    )
 
     def clean_meeting_id(self):
         meeting_id = self.cleaned_data['meeting_id']
+        # Remove any non-numeric characters
+        meeting_id = ''.join(filter(str.isdigit, meeting_id))
+        
         if not meeting_id.isdigit():
             raise forms.ValidationError('Meeting ID must contain only digits')
+        
+        if len(meeting_id) < 9 or len(meeting_id) > 11:
+            raise forms.ValidationError('Meeting ID must be 9-11 digits')
+            
         return meeting_id
 
     def clean_password(self):
@@ -37,6 +52,12 @@ class ManualMeetingForm(forms.Form):
         if not re.match(r'^[a-zA-Z0-9@#$%^&+=]{6,10}$', password):
             raise forms.ValidationError('Password must be 6-10 characters and can only contain letters, numbers, and @#$%^&+=')
         return password
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set minimum datetime for start time
+        now = timezone.now()
+        self.fields['start_time'].widget.attrs['min'] = now.strftime('%Y-%m-%dT%H:%M')
 
 class AutoMeetingForm(forms.Form):
     topic = forms.CharField(

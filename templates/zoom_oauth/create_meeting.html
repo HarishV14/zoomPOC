@@ -22,20 +22,6 @@
     .btn-check:focus + .btn-outline-primary {
         box-shadow: 0 0 0 0.25rem rgba(106, 90, 205, 0.25);
     }
-
-    .schedule-toggle-container {
-        width: 50%;
-        margin: 0 auto;
-    }
-
-    .schedule-toggle-container .btn-group {
-        width: 100%;
-    }
-
-    .schedule-toggle-container .btn {
-        flex: 1;
-        white-space: nowrap;
-    }
 </style>
 {% endblock %}
 
@@ -65,73 +51,21 @@
 
                     <form method="post" id="meetingForm" action="{% url 'zoom_oauth:create_meeting' %}">
                         {% csrf_token %}
-                        <input type="hidden" name="meeting_type" id="selected_meeting_type" value="auto">
                         
-                        <div class="mb-4">
-                            <label class="form-label">Meeting Type</label>
-                            <div class="btn-group w-100" role="group">
-                                <input type="radio" class="btn-check" name="meeting_type_radio" id="type_auto" value="auto" checked>
-                                <label class="btn btn-outline-primary" for="type_auto">
-                                    <i class="fas fa-magic"></i> Create Automatically
-                                </label>
-                                
-                                <input type="radio" class="btn-check" name="meeting_type_radio" id="type_manual" value="manual">
-                                <label class="btn btn-outline-primary" for="type_manual">
-                                    <i class="fas fa-edit"></i> Enter Manually
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Auto-creation form -->
-                        <div id="autoFields">
+                        {% for field in manual_form %}
                             <div class="mb-3">
-                                <label for="id_topic" class="form-label">{{ auto_form.topic.label }}</label>
-                                {{ auto_form.topic }}
-                                {% if auto_form.topic.errors %}
-                                    {% for error in auto_form.topic.errors %}
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <div class="form-text">{{ field.help_text }}</div>
+                                {% endif %}
+                                {% if field.errors %}
+                                    {% for error in field.errors %}
                                         <div class="invalid-feedback d-block">{{ error }}</div>
                                     {% endfor %}
                                 {% endif %}
                             </div>
-                            <div class="mb-3 schedule-toggle-container">
-                                <label class="form-label text-center d-block">Schedule type</label>
-                                <div class="btn-group" role="group">
-                                    <input type="radio" class="btn-check" name="schedule_type" id="schedule_now" value="now" checked>
-                                    <label class="btn btn-outline-primary" for="schedule_now">Start Immediately</label>
-
-                                    <input type="radio" class="btn-check" name="schedule_type" id="schedule_later" value="later">
-                                    <label class="btn btn-outline-primary" for="schedule_later">Schedule for Later</label>
-                                </div>
-                            </div>
-                            <div class="mb-3" id="autoStartTimeField" style="display: none;">
-                                <label for="id_start_time" class="form-label">Start time</label>
-                                {{ auto_form.start_time }}
-                                <div class="form-text">Please select a future date and time</div>
-                                {% if auto_form.start_time.errors %}
-                                    {% for error in auto_form.start_time.errors %}
-                                        <div class="invalid-feedback d-block">{{ error }}</div>
-                                    {% endfor %}
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <!-- Manual entry form -->
-                        <div id="manualFields" style="display: none;">
-                            {% for field in manual_form %}
-                                <div class="mb-3 manual-field">
-                                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                                    {{ field }}
-                                    {% if field.help_text %}
-                                        <div class="form-text">{{ field.help_text }}</div>
-                                    {% endif %}
-                                    {% if field.errors %}
-                                        {% for error in field.errors %}
-                                            <div class="invalid-feedback d-block">{{ error }}</div>
-                                        {% endfor %}
-                                    {% endif %}
-                                </div>
-                            {% endfor %}
-                        </div>
+                        {% endfor %}
 
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary">
@@ -147,153 +81,23 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Form elements
-    const form = document.getElementById('meetingForm');
-    const autoFields = document.getElementById('autoFields');
-    const manualFields = document.getElementById('manualFields');
-    const autoStartTimeField = document.getElementById('autoStartTimeField');
-    const meetingTypeRadios = document.getElementsByName('meeting_type_radio');
-    const scheduleTypeRadios = document.getElementsByName('schedule_type');
-    const selectedMeetingType = document.getElementById('selected_meeting_type');
-
-    // Auto form elements
-    const autoForm = {
-        topic: document.getElementById('id_topic'),
-        startTime: document.getElementById('id_start_time'),
-    };
-
-    // Manual form elements
-    const manualForm = {
-        fields: document.querySelectorAll('.manual-field input'),
-        requiredFields: ['meeting_id', 'password', 'host']
-    };
-
-    // Handle meeting type selection
-    function handleMeetingTypeChange() {
-        const isAutoMode = document.querySelector('input[name="meeting_type_radio"]:checked').value === 'auto';
-        selectedMeetingType.value = isAutoMode ? 'auto' : 'manual';
-
-        // Toggle form visibility
-        autoFields.style.display = isAutoMode ? 'block' : 'none';
-        manualFields.style.display = isAutoMode ? 'none' : 'block';
-
-        // Handle auto form fields
-        if (isAutoMode) {
-            enableAutoForm();
-            disableManualForm();
-        } else {
-            disableAutoForm();
-            enableManualForm();
-        }
-
-        // Update start time field visibility
-        updateStartTimeField();
+    // Set min date for start time field
+    const startTimeField = document.getElementById('id_start_time');
+    if (startTimeField) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        
+        startTimeField.min = `${year}-${month}-${day}T${hours}:${minutes}`;
     }
-
-    // Enable auto form fields
-    function enableAutoForm() {
-        autoForm.topic.disabled = false;
-        autoForm.topic.setAttribute('required', 'required');
-    }
-
-    // Disable auto form fields
-    function disableAutoForm() {
-        autoForm.topic.disabled = true;
-        autoForm.topic.removeAttribute('required');
-        if (autoForm.startTime) {
-            autoForm.startTime.disabled = true;
-            autoForm.startTime.removeAttribute('required');
-        }
-    }
-
-    // Enable manual form fields
-    function enableManualForm() {
-        manualForm.fields.forEach(field => {
-            field.disabled = false;
-            if (manualForm.requiredFields.includes(field.name)) {
-                field.setAttribute('required', 'required');
-            }
-        });
-    }
-
-    // Disable manual form fields
-    function disableManualForm() {
-        manualForm.fields.forEach(field => {
-            field.disabled = true;
-            field.removeAttribute('required');
-        });
-    }
-
-    // Handle schedule type change
-    function updateStartTimeField() {
-        const isLaterSchedule = document.querySelector('input[name="schedule_type"]:checked').value === 'later';
-        const isAutoMode = document.querySelector('input[name="meeting_type_radio"]:checked').value === 'auto';
-
-        if (isAutoMode && isLaterSchedule) {
-            autoStartTimeField.style.display = 'block';
-            if (autoForm.startTime) {
-                autoForm.startTime.disabled = false;
-                autoForm.startTime.setAttribute('required', 'required');
-            }
-        } else {
-            autoStartTimeField.style.display = 'none';
-            if (autoForm.startTime) {
-                autoForm.startTime.disabled = true;
-                autoForm.startTime.removeAttribute('required');
-            }
-        }
-    }
-
-    // Form submission handler
-    form.addEventListener('submit', function(e) {
-        const isAutoMode = document.querySelector('input[name="meeting_type_radio"]:checked').value === 'auto';
-        console.log('Form submission started');
-        console.log('Mode:', isAutoMode ? 'Auto' : 'Manual');
-
-        // Validate based on mode
-        if (isAutoMode) {
-            if (!autoForm.topic.value) {
-                e.preventDefault();
-                console.log('Auto mode: Topic is required');
-                autoForm.topic.focus();
-                return;
-            }
-        } else {
-            for (const fieldName of manualForm.requiredFields) {
-                const field = document.querySelector(`[name="${fieldName}"]`);
-                if (field && !field.value) {
-                    e.preventDefault();
-                    console.log(`Manual mode: ${fieldName} is required`);
-                    field.focus();
-                    return;
-                }
-            }
-        }
-
-        // Log form data before submission
-        const formData = new FormData(form);
-        console.log('Form data:');
-        for (let [key, value] of formData.entries()) {
-            console.log(`${key}: ${value}`);
-        }
-    });
-
-    // Event listeners
-    Array.from(meetingTypeRadios).forEach(radio => {
-        radio.addEventListener('change', handleMeetingTypeChange);
-    });
-
-    Array.from(scheduleTypeRadios).forEach(radio => {
-        radio.addEventListener('change', updateStartTimeField);
-    });
-
-    // Initial setup
-    handleMeetingTypeChange();
 });
 </script>
-{% endblock %}
 {% endblock %} 
