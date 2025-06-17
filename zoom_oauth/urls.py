@@ -10,4 +10,5 @@ urlpatterns = [
     path('meetings/<str:meeting_id>/start/', views.start_meeting, name='start_meeting'),
     path('meetings/<str:meeting_id>/join/', views.join_meeting, name='join_meeting'),
     path('meetings/<int:meeting_id>/update-status/', views.update_meeting_status, name='update_meeting_status'),
+    path('meetings/<int:meeting_id>/client-status-update/', views.client_meeting_status_update, name='client_meeting_status_update'),
 ] 

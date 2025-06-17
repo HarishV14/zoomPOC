@@ -348,3 +348,45 @@ def zoom_webhook(request):
         return JsonResponse({'error': 'Invalid JSON payload'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+@require_POST
+def client_meeting_status_update(request, meeting_id):
+    """Handle client-side meeting status updates from Zoom SDK (host only)"""
+    meeting = get_object_or_404(ZoomMeeting, id=meeting_id)
+    
+    # Verify the user is the host (since only hosts should be updating status now)
+    if not meeting.is_host_user(request.user):
+        return JsonResponse({'error': 'Only the host can update meeting status'}, status=403)
+    
+    status = request.POST.get('status')
+    if not status:
+        return JsonResponse({'error': 'Status is required'}, status=400)
+        
+    try:
+        # Map Zoom SDK status codes to our meeting status
+        status_mapping = {
+            'MEETING_STATUS_IDLE': 'scheduled',
+            'MEETING_STATUS_CONNECTING': 'ready',
+            'MEETING_STATUS_STARTING': 'in_progress',
+            'MEETING_STATUS_IN_MEETING': 'in_progress',
+            'MEETING_STATUS_ENDED': 'ended',
+            'MEETING_STATUS_DISCONNECTING': 'ended',
+            'MEETING_STATUS_FAILED': 'ended',
+            'MEETING_STATUS_RECONNECTING': 'in_progress',
+            'MEETING_STATUS_WAITING_FOR_HOST': 'ready'
+        }
+        
+        new_status = status_mapping.get(status)
+        if not new_status:
+            return JsonResponse({'error': f'Invalid status: {status}'}, status=400)
+            
+        meeting.update_status(new_status)
+        
+        return JsonResponse({
+            'status': 'success',
+            'meeting_status': meeting.status,
+            'is_active': meeting.is_active
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
