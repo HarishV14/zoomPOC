@@ -43,7 +43,7 @@
                         <div class="col-md-6 text-md-end">
                             {% if is_host %}
                                 {% if meeting.status == 'ready' %}
-                                    <a href="{% url 'zoom_oauth:start_meeting' meeting.id %}" class="btn btn-primary">
+                                    <a href="{% url 'zoom_oauth:start_meeting' meeting.meeting_id %}" class="btn btn-primary">
                                         <i class="fas fa-play"></i> Start Meeting
                                     </a>
                                 {% elif meeting.status == 'in_progress' %}
@@ -51,7 +51,7 @@
                                         <a href="{% url 'zoom_oauth:join_meeting' meeting.meeting_id %}" class="btn btn-success">
                                             <i class="fas fa-video"></i> Join Meeting
                                         </a>
-                                        <button class="btn btn-danger" onclick="updateMeetingStatus('{{ meeting.id }}', 'ended')">
+                                        <button class="btn btn-danger" onclick="updateMeetingStatus('{{ meeting.meeting_id }}', 'ended')">
                                             <i class="fas fa-stop"></i> End Meeting
                                         </button>
                                     </div>

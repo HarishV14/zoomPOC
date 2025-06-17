@@ -9,7 +9,7 @@
         <div class="col-md-8">
             <h2>flimix Meetings</h2>
         </div>
-        {% if user.is_superuser %}
+        {% if user.is_host %}
         <div class="col-md-4 text-end">
             <a href="{% url 'zoom_oauth:create_meeting' %}" class="btn btn-primary">
                 <i class="fas fa-plus"></i> Create New Meeting
@@ -144,7 +144,11 @@
 
     {% if not upcoming_meetings and not completed_meetings %}
         <div class="alert alert-primary">
-            <p class="mb-0">No meetings found. <a href="{% url 'zoom_oauth:create_meeting' %}" class="alert-link">Create a new meeting</a> to get started.</p>
+            <p class="mb-0">No meetings found.
+                {% if user.is_host %}
+                    <a href="{% url 'zoom_oauth:create_meeting' %}" class="alert-link">Create a new meeting</a> to get started.
+                {% endif %}
+            </p>
         </div>
     {% endif %}
 </div>
